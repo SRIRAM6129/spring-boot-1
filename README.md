@@ -1,2 +1,4 @@
 # spring-boot-1
-BASIC SPRING BOOT APPLICATION
+
+#### OBJECTIVE
+1. To make an spring boot app that can perform basic  ***CRUD*** operation
