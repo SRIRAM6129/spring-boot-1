@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class ServiceLayer {
 
@@ -21,7 +23,6 @@ public class ServiceLayer {
 	public void idChecker(Long id) {
 		if (id == null) {
 			throw new IllegalArgumentException("The Id cannot be null");
-
 		}
 		if (id < 0) {
 			throw new IllegalArgumentException("The id cannot be an negative value");
@@ -35,61 +36,133 @@ public class ServiceLayer {
 				LOGGER.info("THE DATABASE IS EMPTY");
 
 			}
+			LOGGER.info("The user data has been fetched");
 			return customers;
 
 		} catch (Exception e) {
-			LOGGER.error("exception while fetching user data " + e.getMessage());
-			throw new RuntimeException("Error while fetching the user data");
+			LOGGER.error("exception while fetching  data " + e.getMessage());
+			throw new RuntimeException("Error while fetching the user data : "+ e.getMessage());
 		}
 	}
 
 	public CustomerModel showCustomerById(Long id) {
 		idChecker(id);
-		try {
-			return customerrepo.findById(id)
-					.orElseThrow(() -> new RuntimeException("The user is not found "));
-		} catch (Exception e) {
-			LOGGER.error("exception while fetching user data " + e.getMessage());
-			throw new RuntimeException("Error while fetching the user data");
-		}
+		LOGGER.info("The User data has been fetched ");
+		return customerrepo.findById(id).orElseThrow(() -> {
+			LOGGER.error("The User not found in the database");
+			return new IllegalStateException("The user is not found ");
+		});
+
 	}
 
-	public void addCustomer(Long id, CustomerModel customer) {
+	public CustomerModel addCustomer(CustomerModel customer) {
 
-		idChecker(id);
-		if (customer.getPhone() ==  null) {
+		if (customer.getPhone() == null) {
 			throw new IllegalArgumentException("Account cannot be null");
 		}
-		if(customer.getAccount() ==  null){
+		if (customer.getAccount() == null) {
 			throw new IllegalArgumentException("Account cannot be null");
 		}
-		if(customer.getPhone() < 0){
+		if (customer.getPhone() < 0) {
 			throw new IllegalArgumentException("Phone number cannot be negative");
 		}
-		if(customer.getAccount() < 0){
+		if (customer.getAccount() < 0) {
 			throw new IllegalArgumentException("Account number cannot be negative");
 		}
-		if(customerrepo.existsByPhone(customer.getPhone())){
-			throw new IllegalArgumentException("Phone number already exist");
-		}
-		if (customerrepo.existsByAccount(customer.getAccount())) {
-			throw new IllegalArgumentException("Account number already exist");
-		}
+
 		try {
-			customerrepo.save(customer);
+			LOGGER.info("Customer Saved");
+			return customerrepo.save(customer);
 		} catch (Exception e) {
-			LOGGER.error("Error while saving an new user" + e.getMessage());
-			throw new RuntimeException("Cannot add new user");
+			LOGGER.error("Error while saving an new user : " + e.getMessage());
+			throw new RuntimeException("Cannot add new user : "+ e.getMessage());
 		}
 	}
 
-	public void deleteCustomer(Long id ){
+	public CustomerModel deleteCustomer(Long id) {
 		idChecker(id);
+
 		try {
+			CustomerModel customer = customerrepo.findById(id)
+					.orElseThrow(() -> new IllegalStateException("The user is not found"));
 			customerrepo.deleteById(id);
+			LOGGER.info("The customer has been deleted");
+			return customer;
 		} catch (Exception e) {
 			LOGGER.error("Error deleting the customer" + e.getMessage());
-			throw new RuntimeException("Cannot delete the customer");
+			throw new RuntimeException("Cannot delete the customer : ");
+		}
+	}
+
+	@Transactional
+	public CustomerModel updateCustomer(Long id, CustomerModel customer) {
+		idChecker(id);
+		try {
+			CustomerModel existing_customer = customerrepo.findById(id)
+					.orElseThrow(() -> new IllegalStateException("The user is not found"));
+			if (customer.getName().isEmpty()) {
+				throw new IllegalArgumentException("The name Cannot be empty");
+			}
+			if (customer.getAccount() == null) {
+				throw new IllegalArgumentException("Account number is empty");
+			}
+			existing_customer.setName(customer.getName());
+			existing_customer.setAccount(customer.getAccount());
+			existing_customer.setPhone(customer.getPhone());
+			LOGGER.info("The user" + id + "update successfully");
+			return customerrepo.save(existing_customer);
+		} catch (Exception e) {
+			LOGGER.error("The user cannot be updated" + e.getMessage());
+			throw new RuntimeException("Cannot update the customer" + e.getMessage());
+		}
+	}
+
+	// --------------------------------------------------PRODUCT------------------------------------------------------
+	public List<ProductModel> showAllProduct() {
+		try {
+			List<ProductModel> products = productrepo.findAll();
+			if (products.isEmpty()) {
+				LOGGER.info("THE DATABASE IS EMPTY");
+
+			}
+			LOGGER.info("The user data has been fetched");
+			return products;
+		} catch (Exception e) {
+			LOGGER.error("exception while fetching  the product data " + e.getMessage());
+			throw new RuntimeException("Error while fetching the product data");
+		}
+	}
+
+	public List<ProductModel> showProductByCustomerId(Long id) {
+		idChecker(id);
+		try {
+			CustomerModel customer = customerrepo.findById(id).orElseThrow(() -> {
+				LOGGER.error("The customer not found");
+				return new IllegalArgumentException("The  customer not found ");
+			});
+			return productrepo.findByCustomer(customer);
+		} catch (Exception e) {
+			LOGGER.error("The product Updation failed : " + e.getMessage());
+			throw new RuntimeException("Something went wrong : " + e.getMessage());
+		}
+	}
+
+	public ProductModel addProduct(Long id, Double quantity) {
+		idChecker(id);
+		if (quantity == null) {
+			throw new IllegalArgumentException("The quantity cannot be null");
+		}
+		if (quantity < 0) {
+			throw new IllegalArgumentException("The quantity cannot be an negative value");
+		}
+		try {
+			CustomerModel customer = customerrepo.findById(id)
+					.orElseThrow(() -> new IllegalStateException("The user is not found"));
+			ProductModel product = ProductModel.builder().quantity(quantity).customer(customer).build();
+			return productrepo.save(product);
+		} catch (Exception e) {
+			LOGGER.error("The product Updation failed : " + e.getMessage());
+			throw new RuntimeException("Something went wrong : " + e.getMessage());
 		}
 	}
 }

@@ -5,6 +5,7 @@ spring:
     url: jdbc:mysql://localhost:8500/Spring1
     username: root
     password: 1234
-    driverClassName: com.mysql.jdbc.Driver
+    driverClassName: com.mysql.cj.jdbc.Driver
   jpa:
-    ddl-auto: create-drop
+    hibernate:
+      ddl-auto: update
