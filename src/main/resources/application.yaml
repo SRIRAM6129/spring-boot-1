@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: Spring-Boot-1
+  datasource:
+    url: jdbc:mysql://localhost:8500/Spring1
+    username: root
+    password: 1234
+    driverClassName: com.mysql.jdbc.Driver
+  jpa:
+    ddl-auto: create-drop
